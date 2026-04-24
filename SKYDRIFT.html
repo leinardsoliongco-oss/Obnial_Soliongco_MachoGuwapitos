@@ -113,3 +113,9 @@ class Particle extends Entity {
   update(dt){this.x+=this.vx*dt;this.y+=this.vy*dt;this.life-=dt;if(this.life<=0)this.dead=true;}
   draw(){ctx.globalAlpha=Math.max(0,this.life/this.maxLife);ctx.fillStyle=this.color;ctx.fillRect(this.x-this.size/2,this.y-this.size/2,this.size,this.size);ctx.globalAlpha=1;}
 }
+
+class Bullet extends Entity {
+  constructor(x,y,angle,speed,dmg,isPlayer,color='#00ffcc'){super(x,y);this.vx=Math.cos(angle)*speed;this.vy=Math.sin(angle)*speed;this.dmg=dmg;this.isPlayer=isPlayer;this.color=color;this.trail=[];}
+  update(dt){this.trail.push({x:this.x,y:this.y});if(this.trail.length>6)this.trail.shift();this.x+=this.vx*dt;this.y+=this.vy*dt;if(this.x<-20||this.x>W+20||this.y<-20||this.y>H+20)this.dead=true;}
+  draw(){for(let i=0;i<this.trail.length;i++){ctx.globalAlpha=(i/this.trail.length)*0.4;ctx.fillStyle=this.color;const s=this.isPlayer?3:2;ctx.fillRect(this.trail[i].x-s/2,this.trail[i].y-s/2,s,s);}ctx.globalAlpha=1;ctx.fillStyle=this.color;const s=this.isPlayer?5:4;ctx.fillRect(this.x-s/2,this.y-s/2,s,s);}
+}
