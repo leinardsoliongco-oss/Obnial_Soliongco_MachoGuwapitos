@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKYDRIFT — Top-Down Aerial Shooter</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0f; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: 'Share Tech Mono', monospace; overflow: hidden; color: #e0f0ff; }
+  #gameWrapper { position: relative; width: 600px; height: 700px; }
+  canvas { display: block; border: 1px solid #1a3a5c; box-shadow: 0 0 40px #0a2a4a, 0 0 80px #051525; background: #050a14; }
+  .screen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(5,10,20,0.96); z-index: 10; gap: 18px; padding: 30px; }
+  .screen.hidden { display: none; }
+  .game-title { font-family: 'Orbitron', monospace; font-size: 52px; font-weight: 900; color: #00d4ff; letter-spacing: 8px; text-shadow: 0 0 30px #00a0cc; line-height: 1; }
+  .game-subtitle { font-size: 13px; color: #4488aa; letter-spacing: 5px; text-transform: uppercase; }
+  .menu-divider { width: 200px; height: 1px; background: linear-gradient(to right, transparent, #00d4ff44, transparent); margin: 8px 0; }
+  .stat-row { display: flex; gap: 32px; margin: 8px 0; }
+  .stat-box { text-align: center; }
+  .stat-label { font-size: 11px; color: #4488aa; letter-spacing: 3px; display: block; }
+  .stat-value { font-family: 'Orbitron', monospace; font-size: 28px; color: #00d4ff; }
+  .btn { font-family: 'Orbitron', monospace; font-size: 14px; letter-spacing: 3px; padding: 14px 36px; border: 1px solid #00d4ff55; background: transparent; color: #00d4ff; cursor: pointer; transition: all 0.2s; text-transform: uppercase; }
+  .btn:hover { background: #00d4ff18; border-color: #00d4ff; box-shadow: 0 0 20px #00d4ff33; }
+  .controls-grid { display: grid; grid-template-columns: auto auto; gap: 6px 24px; font-size: 12px; color: #6699bb; }
+  .controls-grid span:nth-child(odd) { color: #00d4ffaa; }
+  .wave-badge { font-family: 'Orbitron', monospace; font-size: 11px; color: #ff6633; letter-spacing: 3px; }
+  #hud { position: absolute; top: 0; left: 0; right: 0; pointer-events: none; padding: 10px 16px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 5; }
+  .hud-left, .hud-right { display: flex; flex-direction: column; gap: 4px; }
+  .hud-label { font-size: 10px; color: #4488aa; letter-spacing: 2px; }
+  .hud-val { font-family: 'Orbitron', monospace; font-size: 18px; color: #00d4ff; line-height: 1; }
+  .hud-center { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .health-bar-wrap { width: 120px; height: 6px; background: #1a2a3a; border: 0.5px solid #2a4a6a; }
+  .health-bar-fill { height: 100%; background: #00ff88; transition: width 0.15s, background 0.3s; }
+  .ammo-pips { display: flex; gap: 3px; flex-wrap: wrap; max-width: 120px; }
+  .ammo-pip { width: 7px; height: 12px; background: #00d4ff; }
+  .ammo-pip.empty { background: #1a3a5a; }
+  </style>
+</head>
+<body>
+<div id="gameWrapper">
+  <canvas id="gameCanvas" width="600" height="700"></canvas>
+  <div id="hud" class="hidden">
+    <div class="hud-left">
+      <span class="hud-label">SCORE</span><span class="hud-val" id="hudScore">0</span>
+      <span class="hud-label" style="margin-top:6px">WAVE</span><span class="hud-val" id="hudWave">1</span>
+    </div>
+    <div class="hud-center" style="padding-top:6px">
+      <span class="hud-label">HULL</span>
+      <div class="health-bar-wrap"><div class="health-bar-fill" id="healthBar" style="width:100%"></div></div>
+      <span class="hud-label" style="margin-top:6px">AMMO</span>
+      <div class="ammo-pips" id="ammoPips"></div>
+    </div>
+    <div class="hud-right" style="align-items:flex-end">
+      <span class="hud-label">KILLS</span><span class="hud-val" id="hudKills">0</span>
+      <span class="hud-label" style="margin-top:6px">HI-SCORE</span><span class="hud-val" id="hudHiScore">0</span>
+    </div>
