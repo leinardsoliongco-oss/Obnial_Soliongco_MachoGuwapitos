@@ -236,3 +236,82 @@ function spawnWave(w){
     enemies.push(new Enemy(ex,ey,type));
   }
 }
+
+const ammoPipsEl=document.getElementById('ammoPips');
+function updateHUD(){
+  document.getElementById('hudScore').textContent=score;
+  document.getElementById('hudWave').textContent=wave;
+  document.getElementById('hudKills').textContent=kills;
+  document.getElementById('hudHiScore').textContent=hiScore;
+  const hr=player.hp/player.maxHp,bar=document.getElementById('healthBar');
+  bar.style.width=(hr*100)+'%';bar.style.background=hr>0.5?'#00ff88':hr>0.25?'#ffcc00':'#ff3333';
+  ammoPipsEl.innerHTML='';
+  for(let i=0;i<player.maxAmmo;i++){const pip=document.createElement('div');pip.className='ammo-pip'+(i<player.ammo?'':' empty');ammoPipsEl.appendChild(pip);}
+  if(player.reloading){const prog=1-player.reloadTimer/player.reloadTime,filled=Math.floor(prog*player.maxAmmo),pips=ammoPipsEl.querySelectorAll('.ammo-pip');for(let i=0;i<filled;i++)pips[i]?.classList.remove('empty');}
+}
+ 
+function rectsOverlap(ax,ay,aw,ah,bx,by,bw,bh){return ax-aw/2<bx+bw/2&&ax+aw/2>bx-bw/2&&ay-ah/2<by+bh/2&&ay+ah/2>by-bh/2;}
+ 
+function gameLoop(ts){
+  if(state!=='playing')return;
+  const dt=Math.min((ts-lastTime)/1000,0.05);lastTime=ts;
+  let sx=0,sy=0;
+  if(shakeDur>0){shakeDur-=dt;sx=(Math.random()-0.5)*shakeAmt*2;sy=(Math.random()-0.5)*shakeAmt*2;if(shakeDur<=0){shakeAmt=0;sx=0;sy=0;}}
+  ctx.save();ctx.translate(sx,sy);
+  drawBackground(dt);
+  player.update(dt);
+  for(const e of enemies)if(e.alive)e.update(dt,player);
+  for(const b of bullets)if(b.alive)b.update(dt);
+  for(const p of powerups)if(p.alive)p.update(dt);
+  for(const p of particles)if(p.alive)p.update(dt);
+ 
+  for(const b of bullets){if(!b.alive||!b.isPlayer)continue;for(const e of enemies){if(!e.alive)continue;if(rectsOverlap(b.x,b.y,6,6,e.x,e.y,e.w,e.h)){b.dead=true;if(e.takeDamage(b.dmg)){spawnExplosion(e.x,e.y,e.color,e.type==='heavy'||e.type==='bomber');score+=e.scoreVal*wave;kills++;if(hiScore<score)hiScore=score;if(Math.random()<0.25)powerups.push(new PowerUp(e.x,e.y));}break;}}}
+  for(const b of bullets){if(!b.alive||b.isPlayer)continue;if(rectsOverlap(b.x,b.y,5,5,player.x,player.y,player.w,player.h)){b.dead=true;player.takeDamage(b.dmg);}}
+  for(const e of enemies){if(!e.alive)continue;if(rectsOverlap(e.x,e.y,e.w,e.h,player.x,player.y,player.w,player.h)){player.takeDamage(20);e.takeDamage(e.hp);spawnExplosion(e.x,e.y,e.color,true);}}
+  for(const p of powerups){if(!p.alive)continue;if(rectsOverlap(p.x,p.y,26,26,player.x,player.y,player.w,player.h))p.apply(player);}
+ 
+  for(const p of particles)p.draw();
+  for(const p of powerups)if(p.alive)p.draw();
+  for(const e of enemies)if(e.alive)e.draw();
+  for(const b of bullets)if(b.alive)b.draw();
+  if(player.alive)player.draw();
+ 
+  if(player.reloading){const prog=1-player.reloadTimer/player.reloadTime;ctx.fillStyle='#1a2a3a';ctx.fillRect(player.x-30,player.y+28,60,5);ctx.fillStyle='#00d4ff';ctx.fillRect(player.x-30,player.y+28,60*prog,5);ctx.fillStyle='#00d4ff88';ctx.font='10px Share Tech Mono';ctx.textAlign='center';ctx.fillText('RELOADING',player.x,player.y+46);}
+ 
+  ctx.restore();
+  updateHUD();
+ 
+  bullets=bullets.filter(b=>b.alive);enemies=enemies.filter(e=>e.alive);powerups=powerups.filter(p=>p.alive);particles=particles.filter(p=>p.alive);
+ 
+  if(!player.alive){endGame();return;}
+  if(enemies.length===0){waveComplete();return;}
+  frameId=requestAnimationFrame(gameLoop);
+}
+ 
+function waveComplete(){
+  state='waveclear';player.hp=Math.min(player.maxHp,player.hp+20);
+  document.getElementById('wcWaveNum').textContent=`WAVE ${wave} COMPLETE`;
+  const bonus=wave*500;score+=bonus;
+  document.getElementById('wcBonus').textContent=`WAVE BONUS: +${bonus}`;
+  document.getElementById('waveClearScreen').classList.remove('hidden');
+  let cd=3;document.getElementById('wcTimer').textContent=cd;
+  const iv=setInterval(()=>{cd--;document.getElementById('wcTimer').textContent=cd;if(cd<=0){clearInterval(iv);document.getElementById('waveClearScreen').classList.add('hidden');wave++;spawnWave(wave);state='playing';lastTime=performance.now();frameId=requestAnimationFrame(gameLoop);}},1000);
+}
+ 
+function endGame(){
+  state='gameover';cancelAnimationFrame(frameId);localStorage.setItem('skydrift_hi',hiScore);
+  document.getElementById('goScore').textContent=score;document.getElementById('goWave').textContent=wave;document.getElementById('goKills').textContent=kills;document.getElementById('goHiScore').textContent=hiScore;
+  document.getElementById('hud').classList.add('hidden');document.getElementById('gameOverScreen').classList.remove('hidden');
+}
+ 
+function startGame(){
+  ['menuScreen','gameOverScreen','waveClearScreen'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  document.getElementById('hud').classList.remove('hidden');
+  cancelAnimationFrame(frameId);initGame();state='playing';lastTime=performance.now();frameId=requestAnimationFrame(gameLoop);
+}
+function showMenu(){state='menu';cancelAnimationFrame(frameId);document.getElementById('gameOverScreen').classList.add('hidden');document.getElementById('hud').classList.add('hidden');document.getElementById('menuScreen').classList.remove('hidden');drawBackground(0);}
+ 
+(function(){drawBackground(0);})();
+</script>
+</body>
+</html>
