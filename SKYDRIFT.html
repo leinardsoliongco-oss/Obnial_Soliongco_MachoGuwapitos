@@ -119,3 +119,42 @@ class Bullet extends Entity {
   update(dt){this.trail.push({x:this.x,y:this.y});if(this.trail.length>6)this.trail.shift();this.x+=this.vx*dt;this.y+=this.vy*dt;if(this.x<-20||this.x>W+20||this.y<-20||this.y>H+20)this.dead=true;}
   draw(){for(let i=0;i<this.trail.length;i++){ctx.globalAlpha=(i/this.trail.length)*0.4;ctx.fillStyle=this.color;const s=this.isPlayer?3:2;ctx.fillRect(this.trail[i].x-s/2,this.trail[i].y-s/2,s,s);}ctx.globalAlpha=1;ctx.fillStyle=this.color;const s=this.isPlayer?5:4;ctx.fillRect(this.x-s/2,this.y-s/2,s,s);}
 }
+
+class Player extends Entity {
+  constructor(){super(W/2,H-100);this.w=28;this.h=36;this.speed=220;this.hp=100;this.maxHp=100;this.angle=-Math.PI/2;this.ammo=12;this.maxAmmo=12;this.reloading=false;this.reloadTime=1.5;this.reloadTimer=0;this.fireCooldown=0;this.fireRate=0.18;this.iframes=0;this.thrustAnim=0;}
+  update(dt){
+    let dx=0,dy=0;
+    if(keys['KeyW']||keys['ArrowUp'])dy-=1;
+    if(keys['KeyS']||keys['ArrowDown'])dy+=1;
+    if(keys['KeyA']||keys['ArrowLeft'])dx-=1;
+    if(keys['KeyD']||keys['ArrowRight'])dx+=1;
+    const boost=(keys['ShiftLeft']||keys['ShiftRight'])?1.6:1;
+    const spd=this.speed*boost;
+    if(dx!==0||dy!==0){const len=Math.sqrt(dx*dx+dy*dy);this.x+=(dx/len)*spd*dt;this.y+=(dy/len)*spd*dt;}
+    this.angle=Math.atan2(mouse.y-this.y,mouse.x-this.x);
+    this.x=Math.max(this.w/2,Math.min(W-this.w/2,this.x));
+    this.y=Math.max(this.h/2,Math.min(H-this.h/2,this.y));
+    this.fireCooldown=Math.max(0,this.fireCooldown-dt);
+    if(!this.reloading&&(mouse.down||keys['Space'])&&this.ammo>0&&this.fireCooldown<=0)this.fire();
+    if(keys['KeyR']&&!this.reloading&&this.ammo<this.maxAmmo)this.startReload();
+    if(this.ammo===0&&!this.reloading)this.startReload();
+    if(this.reloading){this.reloadTimer-=dt;if(this.reloadTimer<=0){this.ammo=this.maxAmmo;this.reloading=false;spawnParticles(this.x,this.y,'#00d4ff',8,60);}}
+    this.iframes=Math.max(0,this.iframes-dt);
+    this.thrustAnim+=dt*12;
+  }
+  fire(){this.fireCooldown=this.fireRate;this.ammo--;const bx=this.x+Math.cos(this.angle)*20,by=this.y+Math.sin(this.angle)*20;bullets.push(new Bullet(bx,by,this.angle,600,25,true,'#00ffcc'));spawnParticles(bx,by,'#00ffcc',4,40);}
+  startReload(){this.reloading=true;this.reloadTimer=this.reloadTime;}
+  takeDamage(dmg){if(this.iframes>0)return;this.hp=Math.max(0,this.hp-dmg);this.iframes=0.7;spawnParticles(this.x,this.y,'#ff3333',16,80);screenShake(8,0.3);if(this.hp<=0)this.dead=true;}
+  draw(){
+    ctx.save();ctx.translate(this.x,this.y);ctx.rotate(this.angle+Math.PI/2);
+    if(this.iframes>0&&Math.sin(this.iframes*40)>0)ctx.globalAlpha=0.4;
+    const f=Math.sin(this.thrustAnim)*0.3+0.7;
+    ctx.globalAlpha=(ctx.globalAlpha||1)*0.9*f;ctx.fillStyle='#ff6600';ctx.fillRect(-5,16,10,12*f);
+    ctx.fillStyle='#ffcc00';ctx.fillRect(-3,16,6,8*f);
+    ctx.globalAlpha=this.iframes>0&&Math.sin(this.iframes*40)>0?0.4:1;
+    ctx.fillStyle='#00aaff';ctx.beginPath();ctx.moveTo(0,-18);ctx.lineTo(12,12);ctx.lineTo(6,8);ctx.lineTo(0,14);ctx.lineTo(-6,8);ctx.lineTo(-12,12);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#cceeff';ctx.beginPath();ctx.ellipse(0,-4,5,9,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#0077cc';ctx.fillRect(-12,4,24,3);
+    ctx.restore();
+  }
+}
