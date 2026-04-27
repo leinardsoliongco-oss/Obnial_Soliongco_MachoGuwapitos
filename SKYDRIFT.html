@@ -818,6 +818,42 @@ function showPickupNotif(text,color){
 }
 
 // ── ACTIVE POWERUP UI ─────────────────────────────
+function updateActivePowerupsUI(){
+  const wrap=document.getElementById('activePowerups');
+  wrap.innerHTML='';
+  const active=[
+    {key:'rapid',rem:player._rapidTimer||0,dur:PTYPE.rapid.duration},
+    {key:'shield',rem:player.shields,dur:PTYPE.shield.duration},
+    {key:'triple',rem:player.tripleShot,dur:PTYPE.triple.duration},
+    {key:'speed',rem:player.speedBoost,dur:PTYPE.speed.duration},
+    {key:'multi',rem:player.scoreMulti,dur:PTYPE.multi.duration},
+  ].filter(a=>a.rem>0);
+  if(active.length===0){wrap.classList.add('hidden');return;}
+  wrap.classList.remove('hidden');
+  for(const a of active){
+    const cfg=PTYPE[a.key];
+    const icon=document.createElement('div');icon.className='ap-icon';
+    icon.style.borderColor=cfg.color;icon.style.color=cfg.color;icon.style.background='rgba(5,10,20,0.85)';
+    icon.innerHTML=`<span style="font-size:9px">${cfg.label}</span>`;
+    const bar=document.createElement('div');bar.className='ap-timer';
+    bar.style.width=((a.rem/a.dur)*100)+'%';bar.style.color=cfg.color;bar.style.background=cfg.color;
+    icon.appendChild(bar);wrap.appendChild(icon);
+  }
+}
+
+// ── BOSS HUD ──────────────────────────────────────
+function updateBossHUD(){
+  const hudEl=document.getElementById('bossHud');
+  if(!isBossWave||!currentBoss||!currentBoss.alive||currentBoss.dying){
+    hudEl.classList.add('hidden');return;
+  }
+  hudEl.classList.remove('hidden');
+  document.getElementById('bossName').textContent=`${currentBoss.tier} — ${currentBoss.name}`;
+  document.getElementById('bossBarFill').style.width=(currentBoss.hpFraction*100)+'%';
+  const shieldPct=currentBoss.maxShieldHp>0?Math.max(0,currentBoss.shieldHp/currentBoss.maxShieldHp)*100:0;
+  document.getElementById('bossBarShield').style.width=shieldPct+'%';
+  document.getElementById('bossPhase').textContent=currentBoss.maxPhases>1?`PHASE ${currentBoss.phase} / ${currentBoss.maxPhases}`:'';
+}
 
 // ── GAME OBJECTS ──────────────────────────────────
 let player,enemies,bullets,missiles,powerups;
