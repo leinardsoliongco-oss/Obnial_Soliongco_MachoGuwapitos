@@ -402,32 +402,7 @@ class Boss extends Entity {
     this.checkPhase();
   }
 
-  doAttack(p){
-    const ang=Math.atan2(p.y-this.y,p.x-this.x);
-    const bossWave = Object.keys(BOSS_DEFS).find(k=>BOSS_DEFS[k]===this.def);
-    switch(parseInt(bossWave)){
-      case 5: // Warden: spread shot
-        for(let i=-2;i<=2;i++){
-          bullets.push(new Bullet(this.x,this.y,ang+i*0.25,220,12,false,this.color));
-        }
-        break;
-      case 10: // Sentinel: rotating turrets + aimed
-        for(let i=0;i<4;i++) bullets.push(new Bullet(this.x,this.y,this.rot+i*Math.PI/2,200,10,false,this.color));
-        bullets.push(new Bullet(this.x,this.y,ang,260,14,false,'#ff88ff'));
-        break;
-      case 15: // Dreadnought: homing missiles + spread
-        if(this.phase>=2) missiles.push(new Missile(this.x,this.y,p,180,20,this.color));
-        for(let i=-1;i<=1;i++) bullets.push(new Bullet(this.x,this.y,ang+i*0.3,230,14,false,this.color));
-        break;
-      case 20: // Apocalypse: all of the above
-        for(let i=0;i<6;i++) bullets.push(new Bullet(this.x,this.y,this.rot+i*Math.PI/3,240,12,false,this.color));
-        missiles.push(new Missile(this.x,this.y,p,200,25,'#ffaa00'));
-        if(this.phase>=2) missiles.push(new Missile(this.x+30,this.y,p,180,22,'#ff5500'));
-        if(this.phase>=3) missiles.push(new Missile(this.x-30,this.y,p,180,22,'#ff0055'));
-        break;
-    }
-  }
-
+  
   doSpecial(p){
     const bossWave = parseInt(Object.keys(BOSS_DEFS).find(k=>BOSS_DEFS[k]===this.def));
     switch(bossWave){
