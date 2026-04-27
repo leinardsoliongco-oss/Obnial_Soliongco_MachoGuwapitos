@@ -917,6 +917,127 @@ function updateHUD(){
 function rectsOverlap(ax,ay,aw,ah,bx,by,bw,bh){return ax-aw/2<bx+bw/2&&ax+aw/2>bx-bw/2&&ay-ah/2<by+bh/2&&ay+ah/2>by-bh/2;}
 function circleRect(cx,cy,cr,rx,ry,rw,rh){return cx>rx-rw/2-cr&&cx<rx+rw/2+cr&&cy>ry-rh/2-cr&&cy<ry+rh/2+cr;}
 
+// ── MAIN LOOP ─────────────────────────────────────
+function gameLoop(ts){
+  if(state!=='playing') return;
+  const dt=Math.min((ts-lastTime)/1000,0.05);lastTime=ts;
+  let sx=0,sy=0;
+  if(shakeDur>0){shakeDur-=dt;sx=(Math.random()-0.5)*shakeAmt*2;sy=(Math.random()-0.5)*shakeAmt*2;if(shakeDur<=0){shakeAmt=0;sx=0;sy=0;}}
+  ctx.save();ctx.translate(sx,sy);
+  drawBackground(dt);
+
+  player.update(dt);
+  // Update regular enemies
+  for(const e of enemies) if(e.alive) e.update(dt,player);
+  // Update boss
+  if(currentBoss&&currentBoss.alive) currentBoss.update(dt,player);
+  for(const b of bullets) if(b.alive) b.update(dt);
+  for(const m of missiles) if(m.alive) m.update(dt);
+  for(const p of powerups) if(p.alive) p.update(dt);
+  for(const p of particles) if(p.alive) p.update(dt);
+
+  // Player bullets vs regular enemies
+  for(const b of bullets){
+    if(!b.alive||!b.isPlayer) continue;
+    for(const e of enemies){
+      if(!e.alive) continue;
+      if(rectsOverlap(b.x,b.y,6,6,e.x,e.y,e.w,e.h)){
+        b.dead=true;
+        if(e.takeDamage(b.dmg)){
+          spawnExplosion(e.x,e.y,e.color,e.type==='heavy'||e.type==='bomber');
+          const gained=e.scoreVal*wave*player.multiplier;score+=gained;kills++;
+          if(hiScore<score)hiScore=score;
+          const roll=Math.random();
+          if(roll<0.05)powerups.push(new PowerUp(e.x,e.y,'nuke'));
+          else if(roll<0.10)powerups.push(new PowerUp(e.x,e.y,'shield'));
+          else if(roll<0.35)powerups.push(new PowerUp(e.x,e.y));
+        }
+        break;
+      }
+    }
+    // Player bullets vs boss
+    if(b.alive&&currentBoss&&currentBoss.alive&&!currentBoss.dying){
+      const dist=Math.sqrt((b.x-currentBoss.x)**2+(b.y-currentBoss.y)**2);
+      if(dist<currentBoss.size+4){
+        b.dead=true;
+        if(currentBoss.takeDamage(b.dmg)){
+          // Boss died
+          spawnExplosion(currentBoss.x,currentBoss.y,currentBoss.color,true);
+          const gained=currentBoss.scoreVal*player.multiplier;score+=gained;kills++;
+          if(hiScore<score)hiScore=score;
+          // Drop several powerups
+          for(let i=0;i<5;i++){
+            const ox=(Math.random()-0.5)*120,oy=(Math.random()-0.5)*80;
+            powerups.push(new PowerUp(currentBoss.x+ox,currentBoss.y+oy));
+          }
+          powerups.push(new PowerUp(currentBoss.x,currentBoss.y,'health'));
+        }
+      }
+    }
+  }
+
+  // Enemy bullets vs player
+  for(const b of bullets){if(!b.alive||b.isPlayer)continue;if(rectsOverlap(b.x,b.y,5,5,player.x,player.y,player.w,player.h)){b.dead=true;player.takeDamage(b.dmg);}}
+  // Missiles vs player
+  for(const m of missiles){
+    if(!m.alive)continue;
+    if(circleRect(m.x,m.y,8,player.x,player.y,player.w,player.h)){
+      m.dead=true;spawnExplosion(m.x,m.y,m.color,false);player.takeDamage(m.dmg);
+    }
+  }
+  // Enemy ram vs player
+  for(const e of enemies){if(!e.alive)continue;if(rectsOverlap(e.x,e.y,e.w,e.h,player.x,player.y,player.w,player.h)){player.takeDamage(20);e.takeDamage(e.hp);spawnExplosion(e.x,e.y,e.color,true);}}
+  // Player vs powerups
+  for(const p of powerups){if(!p.alive)continue;if(rectsOverlap(p.x,p.y,28,28,player.x,player.y,player.w,player.h))p.apply(player);}
+
+  // DRAW
+  for(const p of particles)  p.draw();
+  for(const p of powerups)   if(p.alive) p.draw();
+  for(const e of enemies)    if(e.alive) e.draw();
+  if(currentBoss&&currentBoss.alive) currentBoss.draw();
+  for(const b of bullets)    if(b.alive) b.draw();
+  for(const m of missiles)   if(m.alive) m.draw();
+  if(player.alive) player.draw();
+
+  // Reload bar
+  if(player.reloading){
+    const prog=1-player.reloadTimer/player.reloadTime;
+    ctx.fillStyle='#1a2a3a';ctx.fillRect(player.x-30,player.y+28,60,5);
+    ctx.fillStyle='#00d4ff';ctx.fillRect(player.x-30,player.y+28,60*prog,5);
+    ctx.fillStyle='#00d4ff88';ctx.font='10px Share Tech Mono';ctx.textAlign='center';ctx.fillText('RELOADING',player.x,player.y+46);
+  }
+  if(player.shields>0){
+    ctx.fillStyle='#2a1a4a';ctx.fillRect(player.x-30,player.y-52,60,5);
+    ctx.fillStyle='#aa88ff';ctx.fillRect(player.x-30,player.y-52,60*(player.shieldHp/60),5);
+    ctx.fillStyle='#aa88ffaa';ctx.font='9px Share Tech Mono';ctx.textAlign='center';ctx.fillText('SHIELD',player.x,player.y-58);
+  }
+  if(player.scoreMulti>0){
+    ctx.fillStyle='#ffff00';ctx.font='bold 11px Orbitron,monospace';ctx.textAlign='center';ctx.fillText('×2',player.x,player.y-42);
+  }
+  ctx.restore();
+
+  updateHUD();updateActivePowerupsUI();updateBossHUD();
+
+  bullets=bullets.filter(b=>b.alive);
+  missiles=missiles.filter(m=>m.alive);
+  enemies=enemies.filter(e=>e.alive);
+  powerups=powerups.filter(p=>p.alive);
+  particles=particles.filter(p=>p.alive);
+
+  if(!player.alive){endGame();return;}
+
+  // Check wave clear
+  const bossDefeated = isBossWave && currentBoss && currentBoss.dead;
+  const normalWaveClear = !isBossWave && enemies.length===0;
+  if(bossDefeated||normalWaveClear){ waveComplete(); return; }
+
+  // If boss dying but not dead yet, keep running
+  if(isBossWave && currentBoss && currentBoss.dying && !currentBoss.dead){
+    frameId=requestAnimationFrame(gameLoop);return;
+  }
+
+  frameId=requestAnimationFrame(gameLoop);
+}
 
 // ── WAVE COMPLETE ─────────────────────────────────
 function waveComplete(){
