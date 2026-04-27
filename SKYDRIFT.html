@@ -251,7 +251,74 @@ class Missile extends Entity {
   }
 }
 
+// ── BOSS ──────────────────────────────────────────
+class Boss extends Entity {
+  constructor(wave){
+    super(W/2,-80);
+    const def = BOSS_DEFS[wave] || BOSS_DEFS[5];
+    this.def = def;
+    this.name = def.name;
+    this.tier = def.tier;
+    this.color = def.color;
+    this.hp = def.hp;
+    this.maxHp = def.hp;
+    this.size = def.size;
+    this.scoreVal = def.scoreVal;
+    this.phase = 1;
+    this.maxPhases = def.phases;
+    this.shieldHp = def.shieldHp;
+    this.maxShieldHp = def.shieldHp;
+    this.shieldActive = def.shieldHp > 0;
+    // Movement
+    this.targetY = 120;
+    this.entering = true;
+    this.vx = 0;this.vy = 180;
+    this.moveTimer = 0;
+    this.moveDirX = 1;
+    // Attack
+    this.attackTimer = 0;
+    this.attackRate = 1.5;
+    this.angle = 0;
+    this.rot = 0;
+    // Hit flash
+    this.hitFlash = 0;
+    // Death anim
+    this.deathTimer = 0;
+    this.dying = false;
+    // Special timers
+    this.specialTimer = 0;
+    this.specialRate = 5;
+    this.laserCharge = 0;
+    this.laserActive = false;
+    this.laserAngle = 0;
+    this.laserDuration = 0;
+    // Phase thresholds (divide evenly)
+    this.phaseHP = [];
+    for(let i=1;i<def.phases;i++) this.phaseHP.push(def.hp*(1-i/def.phases));
+    this.lastPhase = 1;
+  }
 
+  get hpFraction(){ return this.hp/this.maxHp; }
+
+  checkPhase(){
+    const newPhase = this.maxPhases - this.phaseHP.filter(t=>this.hp<=t).length;
+    if(newPhase > this.lastPhase){
+      this.lastPhase = newPhase;
+      this.phase = newPhase;
+      // Phase transition burst
+      spawnParticles(this.x,this.y,this.color,40,200);
+      screenShake(15,0.5);
+      showPickupNotif(`PHASE ${newPhase}!`,this.color);
+      // Restore shield on phase change for higher-tier bosses
+      if(this.maxPhases>=3 && this.shieldHp<=0 && newPhase>1){
+        this.shieldHp=this.maxShieldHp*0.6;
+        this.shieldActive=true;
+      }
+      // Speed up attacks
+      this.attackRate=Math.max(0.4, 1.5 - (newPhase-1)*0.25);
+      this.specialRate=Math.max(2.5, 5-(newPhase-1)*0.8);
+    }
+  }
 
   update(dt, p){
     if(this.dying){
