@@ -555,7 +555,18 @@ class Boss extends Entity {
     ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(0,0,this.size*0.15,0,Math.PI*2);ctx.fill();
   }
 
-  
+  drawDreadnought(){
+    // Diamond/X shape
+    ctx.fillStyle='#220000';ctx.beginPath();ctx.moveTo(0,-this.size*1.1);ctx.lineTo(this.size*0.8,0);ctx.lineTo(0,this.size*1.1);ctx.lineTo(-this.size*0.8,0);ctx.closePath();ctx.fill();
+    ctx.strokeStyle=this.color;ctx.lineWidth=3;ctx.stroke();
+    ctx.fillStyle=this.color;
+    for(let i=0;i<4;i++){ctx.save();ctx.rotate(i*Math.PI/2);ctx.fillRect(-5,this.size*0.3,10,this.size*0.6);ctx.restore();}
+    ctx.fillStyle='#ff0000';ctx.beginPath();ctx.arc(0,0,this.size*0.35,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#ff8888';ctx.beginPath();ctx.arc(0,0,this.size*0.15,0,Math.PI*2);ctx.fill();
+    // Phase glow rings
+    for(let p=1;p<this.phase;p++){ctx.globalAlpha=0.3;ctx.strokeStyle='#ff8888';ctx.lineWidth=1;ctx.beginPath();ctx.arc(0,0,this.size*(0.5+p*0.2),0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
+  }
+
   drawApocalypse(){
     // Star + spinning rings
     ctx.fillStyle='#111100';ctx.beginPath();ctx.arc(0,0,this.size,0,Math.PI*2);ctx.fill();
