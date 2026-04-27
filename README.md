@@ -14,7 +14,6 @@
 - [Features](#features)
 - [Setup Instructions](#setup-instructions)
   - [Playing on Desktop / Laptop](#playing-on-desktop--laptop)
-  - [Playing on Mobile / Phone](#playing-on-mobile--phone)
   - [Playing via GitHub Pages](#playing-via-github-pages)
 - [Controls](#controls)
 - [Gameplay Guide](#gameplay-guide)
@@ -49,8 +48,9 @@ The game features:
 | Game Over Screen | Final score, wave reached, kills, and hi-score |
 | Wave Clear Screen | Between-wave summary with bonus points |
 | Enemy AI | 4 types: Basic, Heavy, Scout, Bomber |
-| Powerup System | HP, Ammo, and Rapid Fire drops |
-| HUD | Live score, wave counter, hull bar, ammo pips |
+| Boss System | Unique boss fight every 5th wave with phases, shields, and special attacks |
+| Powerup System | HP, Ammo, Rapid Fire, Shield, Triple Shot, Nuke, Speed Boost, and Score Multiplier drops |
+| HUD | Live score, wave counter, hull bar, ammo pips, boss health bar |
 | High Score | Saved locally via `localStorage` |
 
 ---
@@ -74,30 +74,6 @@ Find `SKYDRIFT.html` inside the extracted folder. Double-click it. It will open 
 Click **LAUNCH MISSION** on the main menu and start flying.
 
 > **Note:** No internet connection is required after downloading. No server, Node.js, or installs of any kind are needed.
-
----
-
-### Playing on Mobile / Phone
-
-SKYDRIFT was built for desktop mouse controls, but you can still play it on a phone using a browser with touch support.
-
-**Option A — Via GitHub Pages (easiest)**
-
-1. Open your phone's browser (Chrome recommended)
-2. Go to the GitHub Pages link: `https://github.com/leinardsoliongco-oss/Obnial_Soliongco_MachoGuwapitos.git`
-3. Tap **LAUNCH MISSION**
-4. **Touch controls:** Tap on the canvas to fire toward that point. The ship aims at your tap location automatically.
-
-**Option B — From a file on your phone**
-
-1. Transfer `SKYDRIFT.html` to your phone (via USB, Google Drive, or email)
-2. Open your phone's Chrome browser
-3. Type `file:///sdcard/Download/SKYDRIFT.html` in the address bar (adjust the path to wherever you saved the file)
-
-**Tips for mobile play:**
-- Rotate your phone to **landscape orientation** for the best view
-- Pinch-zoom out slightly if the canvas is too large for your screen
-- The game is fully playable with one finger — tap to fire, the ship moves toward your touch point
 
 ---
 
@@ -137,13 +113,6 @@ Share this link for your Day 14 live demo.
 | `R` | Manual Reload |
 
 > Ammo auto-reloads when empty. Use `R` to reload early during a break in combat.
-
-### Mobile / Touch Controls
-
-| Input | Action |
-|---|---|
-| Tap canvas | Fire toward tap point |
-| Touch and drag | Move ship toward drag direction |
 
 ---
 
@@ -190,6 +159,30 @@ Share this link for your Day 14 live demo.
 
 ---
 
+## Boss Waves
+
+Every **5th wave** is a Boss Wave. Normal enemies are replaced by a single powerful boss that must be destroyed to advance. A **⚠ BOSS INCOMING ⚠** warning flashes on screen before the boss enters.
+
+Each boss has a dedicated **health bar** at the top of the screen showing its name, current HP, shield status, and active phase.
+
+| Wave | Boss | Tier | HP | Phases | Shield | Score | Special Attacks |
+|---|---|---|---|---|---|---|---|
+| **5** | WARDEN MK-I | Easy Boss | 600 | 1 | None | 5,000 | 5-way spread shot, 12-bullet ring burst |
+| **10** | SENTINEL PRIME | Medium Boss | 1,200 | 2 | 80 HP | 12,000 | Rotating turrets + aimed shot, double bullet ring |
+| **15** | DREADNOUGHT X | Hard Boss | 2,200 | 3 | 150 HP | 25,000 | Homing missiles, 3-bullet spread, charged laser beam |
+| **20** | APOCALYPSE CORE | ⚠ Ultra Boss | 4,000 | 4 | 200 HP | 60,000 | All of the above — rotating spread, triple missiles, sweeping laser, bullet storm |
+
+**Boss Mechanics:**
+
+- **Phases** — Bosses with multiple phases increase their attack speed and fire rate each time they drop to a new HP threshold. A particle burst and screen shake signal each phase transition.
+- **Shields** — Higher-tier bosses start with a shield (shown as a purple overlay on the health bar). All damage is absorbed by the shield first; destroying it triggers a large explosion. Shields can partially regenerate on phase transitions.
+- **Homing Missiles** — Dreadnought X (Wave 15) and Apocalypse Core (Wave 20) fire homing missiles that track your position. They can be outmaneuvered but not outrun.
+- **Laser Beam** — Dreadnought X and Apocalypse Core charge up a sustained laser beam that sweeps across the screen and deals continuous damage if you stay in its path.
+- **Nuke vs. Bosses** — Using a Nuke powerup during a boss wave deals 25% of the boss's current HP as damage instead of an instant kill.
+- **Defeating a boss** awards a massive score bonus and clears the wave.
+
+---
+
 ## Powerups
 
 Powerups drop randomly (25% chance) from destroyed enemies. They float in place for 8 seconds before disappearing. Fly over one to collect it.
@@ -198,7 +191,14 @@ Powerups drop randomly (25% chance) from destroyed enemies. They float in place 
 |---|---|---|---|
 | **Health** | `HP` | Restores 30 HP | Green |
 | **Ammo** | `AM` | Instantly refills all ammo and cancels any active reload | Cyan |
-| **Rapid Fire** | `RD` | Doubles your fire rate for 5 seconds | Yellow |
+| **Rapid Fire** | `RF` | Doubles your fire rate for 5 seconds | Yellow |
+| **Shield** | `SH` | Absorbs all incoming damage for 6 seconds | Purple |
+| **Triple Shot** | `3X` | Fires a 3-bullet spread for 7 seconds | Orange |
+| **Nuke** | `NK` | Instantly destroys all regular enemies; deals 25% HP damage to bosses | Red |
+| **Speed Boost** | `SP` | Increases movement speed by 1.8× for 6 seconds | Cyan |
+| **Score Multiplier** | `2X` | Doubles all score gains for 8 seconds | Yellow |
+
+Active timed powerups display as icons at the bottom of the screen with a countdown bar so you always know what's running.
 
 ---
 
@@ -217,13 +217,16 @@ All game logic is inside the `<script>` tag of `SKYDRIFT.html`, organized into c
 | `class Entity` | Base class all game objects inherit from |
 | `class Particle` | Visual particles for explosions and hit effects |
 | `class Bullet` | Projectile movement and trail rendering |
+| `class Missile` | Homing missile tracking logic used by boss enemies |
 | `class Player` | Ship movement, mouse aiming, fire system, reload, damage handling |
 | `class Enemy` | Four enemy AI types with unique movement and shooting patterns |
+| `class Boss` | Boss entity with multi-phase AI, shields, laser, and per-boss attack patterns |
 | `class PowerUp` | Collectible drops with bobbing animation and on-collect effects |
+| `BOSS_DEFS` | Data definitions for all 4 bosses (stats, phases, shield HP, score value) |
 | `drawBackground()` | Scrolling parallax star field |
-| `spawnWave()` | Enemy generation with type scaling per wave number |
+| `spawnWave()` | Enemy generation with type scaling per wave number; triggers boss on wave % 5 === 0 |
 | `gameLoop()` | Main delta-time loop — update all entities, run collision checks, draw everything |
-| `updateHUD()` | Live DOM updates for score, health bar, ammo pips, wave counter |
+| `updateHUD()` | Live DOM updates for score, health bar, ammo pips, wave counter, boss health bar |
 | Screen functions | `startGame()`, `endGame()`, `waveComplete()`, `showMenu()` |
 
 ---
@@ -235,12 +238,15 @@ All game logic is inside the `<script>` tag of `SKYDRIFT.html`, organized into c
 - `class Bullet` — projectile physics, bullet trail rendering
 - Collision detection system (player bullets vs enemies, enemy bullets vs player, ram detection)
 - HUD implementation (health bar color transitions, ammo pip display, reload progress bar)
+- `class Boss` — all 4 bosses with multi-phase AI, shields, homing missiles, laser beam, and per-boss attack patterns
 
 **OBNIAL** — [GitHub: @obnial](https://github.com/MrRezmor/Prog2-9302-AY225-OBNIAL.git)
 - `class Enemy` — all 4 AI types with unique movement behavior and attack patterns
-- `class PowerUp` — drop system, bobbing animation, effect application per type
-- Wave spawning logic and difficulty scaling system
-- Screen state management (Main Menu, Wave Clear, Game Over transitions)
+- `class Missile` — homing missile tracking and rendering
+- `class PowerUp` — expanded drop system (8 types), bobbing animation, effect application per type
+- `BOSS_DEFS` — boss stat definitions and wave trigger logic
+- Wave spawning logic, difficulty scaling, and boss wave detection
+- Screen state management (Main Menu, Wave Clear, Game Over, Boss Warning overlay transitions)
 
 ---
 
