@@ -185,17 +185,7 @@ const BOSS_DEFS = {
 };
 
 // ── POWERUP REGISTRY ──────────────────────────────
-const PTYPE = {
-  health:  { label:'HP',  color:'#00ff88', duration:0,    desc:'HULL +30'       },
-  ammo:    { label:'AM',  color:'#00d4ff', duration:0,    desc:'AMMO REFILL'    },
-  rapid:   { label:'RF',  color:'#ffcc00', duration:5,    desc:'RAPID FIRE 5s'  },
-  shield:  { label:'SH',  color:'#aa88ff', duration:6,    desc:'SHIELD 6s'      },
-  triple:  { label:'3X',  color:'#ff8800', duration:7,    desc:'TRIPLE SHOT 7s' },
-  nuke:    { label:'NK',  color:'#ff3366', duration:0,    desc:'NUKE!'          },
-  speed:   { label:'SP',  color:'#00ffff', duration:6,    desc:'SPEED BOOST 6s' },
-  multi:   { label:'2X',  color:'#ffff00', duration:8,    desc:'2× SCORE 8s'   },
-};
-const PTYPES_LIST = Object.keys(PTYPE);
+
 
 // ── ENTITY BASE ───────────────────────────────────
 class Entity { constructor(x,y){this.x=x;this.y=y;this.dead=false;} get alive(){return !this.dead;} }
